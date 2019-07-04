@@ -32,7 +32,7 @@ class UserController {
     const schema = Yup.object().shape({
       name: Yup.string(),
       email: Yup.string().email(),
-      oldPassword: Yup.string().min(6),
+      oldPassword: Yup.string(),
       password: Yup.string()
         .min(6)
         .when('oldPassword', (oldPassword, field) =>
@@ -46,7 +46,7 @@ class UserController {
 
     const { email, oldPassword } = req.body;
 
-    const usr = User.findOne({ where: { email } });
+    const usr = await User.findOne({ where: { email } });
 
     if (!usr) return res.status(400).json({ error: 'user not found' });
 
@@ -54,7 +54,7 @@ class UserController {
       return res.status(400).json({ error: 'password does not match' });
     }
 
-    const { id, provider, name } = usr.update(req.body);
+    const { id, provider, name } = await usr.update(req.body);
 
     return res.send({ id, name, email, provider });
   }
