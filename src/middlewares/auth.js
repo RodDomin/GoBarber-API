@@ -18,6 +18,7 @@ export default async function(req, res, next) {
 
     return next();
   } catch (err) {
+    console.log(err);
     return res.status(401).send({ error: 'token not approved' });
   }
 }

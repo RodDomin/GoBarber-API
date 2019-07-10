@@ -1,10 +1,13 @@
 import * as Yup from 'yup';
-import { startOfHour, parseISO, isBefore, format } from 'date-fns';
+import { startOfHour, parseISO, isBefore, format, subHours } from 'date-fns';
 import pt from 'date-fns/locale/pt';
 import User from '../models/User';
 import File from '../models/File';
 import Appointments from '../models/Appointmens';
 import Notification from '../Schemas/notifications';
+
+import Queue from '../../lib/Queue';
+import CancellationMail from '../jobs/CancellationMail.js';
 
 class AppointmentController {
   async index(req, res) {
@@ -103,6 +106,47 @@ class AppointmentController {
     await Notification.create({
       content: `Novo agendamento de ${user.name} para ${formatedDate}`,
       user: provider_id,
+    });
+
+    return res.json(appointment);
+  }
+
+  async delete(req, res) {
+    const appointment = await Appointments.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'provider',
+          attributes: ['name', 'email'],
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name'],
+        },
+      ],
+    });
+
+    if (appointment.user_id !== req.body.userId) {
+      return res
+        .status(401)
+        .json({ erro: 'you dont have permission to cancel this appointment' });
+    }
+
+    const dateWithSub = subHours(appointment.date, 2);
+
+    if (isBefore(dateWithSub, new Date())) {
+      return res
+        .status(401)
+        .json({ error: 'you cannot cancel past appointments' });
+    }
+
+    appointment.canceled_at = new Date();
+
+    await appointment.save();
+
+    await Queue.add(CancellationMail.key, {
+      appointment,
     });
 
     return res.json(appointment);
