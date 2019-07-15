@@ -1,10 +1,10 @@
 export default {
-  host: 'smtp.mailtrap.io',
-  port: '2525',
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
   secure: false,
   auth: {
-    user: '2bc0c6430a9bd5',
-    pass: '8e8e8404dd01a9',
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
   default: {
     from: 'Equipe GoBarber <noreply@gobarber.com>',
